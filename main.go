@@ -23,12 +23,13 @@ var (
 
    replace {-spritename-} with the sprite you like to use
 
+   ----------------------------------------------------
 */
 
 .sprite {display:inline-block; overflow:hidden; background-repeat: no-repeat;background-image:url({{.Name}}.png);}
 
 {{range .Sprites}}
-.{{.Name}} {width:{{.W}}px; height:{{.H}}px; background-position: -{{.X}}px -{{.Y}}px}
+.tp-{{.Name}} {width:{{.W}}px; height:{{.H}}px; background-position: -{{.X}}px -{{.Y}}px}
 {{end}}
   `))
 )
