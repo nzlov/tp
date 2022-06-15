@@ -24,6 +24,8 @@ var (
 	config  = flag.String("c", "", "config path")
 	quality = flag.Int("q", 90, "quality")
 	border  = flag.Int("b", 0, "border")
+	width   = flag.Int("w", 2000, "max width")
+	height  = flag.Int("h", 2000, "max height")
 	outtype = flag.String("t", "webp", "output file type. png webp jpg")
 	prefix  = flag.String("p", "tp-", "css class name prefix")
 	t       = template.Must(template.New("css").Parse(`/* ----------------------------------------------------
@@ -51,6 +53,8 @@ type Config struct {
 	Prefix  string `yaml:"prefix"`
 	Quality int    `yaml:"quality"`
 	Border  int    `yaml:"border"`
+	Width   int    `yaml:"width"`
+	Height  int    `yaml:"height"`
 }
 
 func main() {
@@ -66,6 +70,8 @@ func main() {
 		viper.SetDefault("border", 0)
 		viper.SetDefault("outtype", "webp")
 		viper.SetDefault("prefix", "tp-")
+		viper.SetDefault("width", 2000)
+		viper.SetDefault("height", 2000)
 		viper.AutomaticEnv()
 		data, err := os.ReadFile(*config)
 		if err != nil {
@@ -84,6 +90,8 @@ func main() {
 		quality = &c.Quality
 		prefix = &c.Prefix
 		border = &c.Border
+		width = &c.Width
+		height = &c.Height
 	}
 	is, err := loadimage(flag.Arg(0))
 	if err != nil {
@@ -141,6 +149,12 @@ func flow(is []*Item) (image.Image, error) {
 			mh = v.H
 		}
 		mw += v.W + *border*2
+	}
+	if mw > *width {
+		return nil, fmt.Errorf("width bigger than %d", *width)
+	}
+	if mh > *height {
+		return nil, fmt.Errorf("height bigger than %d", *height)
 	}
 	img := image.NewRGBA(image.Rect(0, 0, mw, mh+*border*2))
 	// 横放
