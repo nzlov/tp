@@ -54,7 +54,7 @@ type Config struct {
 func main() {
 	flag.Parse()
 	if len(flag.Args()) == 0 {
-		fmt.Println("need src path")
+		fmt.Println("need src path\n tp dir1 dir2 ...")
 		return
 	}
 	if config != nil && *config != "" {

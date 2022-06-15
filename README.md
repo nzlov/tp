@@ -1,5 +1,15 @@
 # 构建精灵图
 
+## 使用
+
+### 下载可执行文件
+
+### Go
+
+```
+go run github.com/nzlov/tp@latest
+```
+
 ## 使用配置文件
 
 `config.yaml`:
