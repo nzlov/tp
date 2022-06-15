@@ -23,6 +23,7 @@ var (
 	out     = flag.String("o", "output", "output file path")
 	config  = flag.String("c", "", "config path")
 	quality = flag.Int("q", 90, "quality")
+	border  = flag.Int("b", 0, "border")
 	outtype = flag.String("t", "webp", "output file type. png webp jpg")
 	prefix  = flag.String("p", "tp-", "css class name prefix")
 	t       = template.Must(template.New("css").Parse(`/* ----------------------------------------------------
@@ -49,6 +50,7 @@ type Config struct {
 	Outtype string `yaml:"outtype"`
 	Prefix  string `yaml:"prefix"`
 	Quality int    `yaml:"quality"`
+	Border  int    `yaml:"border"`
 }
 
 func main() {
@@ -61,6 +63,7 @@ func main() {
 		viper.SetConfigType("yaml")
 		viper.SetDefault("output", "output")
 		viper.SetDefault("quality", 90)
+		viper.SetDefault("border", 0)
 		viper.SetDefault("outtype", "webp")
 		viper.SetDefault("prefix", "tp-")
 		viper.AutomaticEnv()
@@ -80,6 +83,7 @@ func main() {
 		outtype = &c.Outtype
 		quality = &c.Quality
 		prefix = &c.Prefix
+		border = &c.Border
 	}
 	is, err := loadimage(flag.Arg(0))
 	if err != nil {
@@ -136,15 +140,15 @@ func flow(is []*Item) (image.Image, error) {
 		if v.H > mh {
 			mh = v.H
 		}
-		mw += v.W
+		mw += v.W + *border*2
 	}
-	img := image.NewRGBA(image.Rect(0, 0, mw, mh))
+	img := image.NewRGBA(image.Rect(0, 0, mw, mh+*border*2))
 	// 横放
 	cx := 0
 	for _, v := range is {
-		v.X = cx
-		cx = v.X + v.W
-		draw.Draw(img, image.Rect(v.X, v.Y, cx, v.H), v.img, image.Point{0, 0}, draw.Over)
+		v.X = cx + *border
+		cx = v.X + v.W + *border
+		draw.Draw(img, image.Rect(v.X, v.Y+*border, cx+*border, v.H+*border), v.img, image.Point{0, 0}, draw.Over)
 	}
 	return img, nil
 }
