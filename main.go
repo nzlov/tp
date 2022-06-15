@@ -14,8 +14,9 @@ import (
 )
 
 var (
-	out = flag.String("o", "output", "output file path")
-	t   = template.Must(template.New("css").Parse(`/* ----------------------------------------------------
+	out    = flag.String("o", "output", "output file path")
+	prefix = flag.String("p", "tp-", "css class name prefix")
+	t      = template.Must(template.New("css").Parse(`/* ----------------------------------------------------
    created with https://github.com/nzlov/tp
    ----------------------------------------------------
 
@@ -27,9 +28,9 @@ var (
 */
 
 .sprite {display:inline-block; overflow:hidden; background-repeat: no-repeat;background-image:url({{.Name}}.png);}
-
+{{$prefix := .Prefix}}
 {{range .Sprites}}
-.tp-{{.Name}} {width:{{.W}}px; height:{{.H}}px; background-position: -{{.X}}px -{{.Y}}px}
+.{{$prefix}}{{.Name}} {width:{{.W}}px; height:{{.H}}px; background-position: -{{.X}}px -{{.Y}}px}
 {{end}}
   `))
 )
@@ -61,6 +62,7 @@ func save(name string, is []*Item) error {
 	}
 	defer cf.Close()
 	if err := t.Execute(cf, map[string]any{
+		"Prefix":  prefix,
 		"Name":    name,
 		"Sprites": is,
 	}); err != nil {
