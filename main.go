@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"image"
@@ -15,11 +16,14 @@ import (
 
 	"github.com/kolesa-team/go-webp/encoder"
 	"github.com/kolesa-team/go-webp/webp"
+	"github.com/spf13/viper"
 )
 
 var (
 	out     = flag.String("o", "output", "output file path")
-	outtype = flag.String("t", "png", "output file type. png webp jpg")
+	config  = flag.String("c", "", "config path")
+	quality = flag.Int("q", 90, "quality")
+	outtype = flag.String("t", "webp", "output file type. png webp jpg")
 	prefix  = flag.String("p", "tp-", "css class name prefix")
 	t       = template.Must(template.New("css").Parse(`/* ----------------------------------------------------
    created with https://github.com/nzlov/tp
@@ -40,11 +44,42 @@ var (
   `))
 )
 
+type Config struct {
+	Output  string `yaml:"output"`
+	Outtype string `yaml:"outtype"`
+	Prefix  string `yaml:"prefix"`
+	Quality int    `yaml:"quality"`
+}
+
 func main() {
 	flag.Parse()
 	if len(flag.Args()) == 0 {
 		fmt.Println("need src path")
 		return
+	}
+	if config != nil && *config != "" {
+		viper.SetConfigType("yaml")
+		viper.SetDefault("output", "output")
+		viper.SetDefault("quality", 90)
+		viper.SetDefault("outtype", "webp")
+		viper.SetDefault("prefix", "tp-")
+		viper.AutomaticEnv()
+		data, err := os.ReadFile(*config)
+		if err != nil {
+			panic(err)
+		}
+		if err := viper.ReadConfig(bytes.NewBuffer(data)); err != nil {
+			panic(err)
+		}
+		c := &Config{}
+		if err := viper.Unmarshal(&c); err != nil {
+			panic(err)
+		}
+		fmt.Println("ReadConfig:", c)
+		out = &c.Output
+		outtype = &c.Outtype
+		quality = &c.Quality
+		prefix = &c.Prefix
 	}
 	is, err := loadimage(flag.Arg(0))
 	if err != nil {
@@ -81,15 +116,15 @@ func save(name string, is []*Item) error {
 	defer f.Close()
 	switch *outtype {
 	case "jpg":
-		return jpeg.Encode(f, img, &jpeg.Options{Quality: 100})
-	case "webp":
-		options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 100)
+		return jpeg.Encode(f, img, &jpeg.Options{Quality: *quality})
+	case "png":
+		return png.Encode(f, img)
+	default:
+		options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, float32(*quality))
 		if err != nil {
 			return err
 		}
 		return webp.Encode(f, img, options)
-	default:
-		return png.Encode(f, img)
 	}
 }
 
