@@ -5,18 +5,23 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
+	"image/jpeg"
 	"image/png"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/kolesa-team/go-webp/encoder"
+	"github.com/kolesa-team/go-webp/webp"
 )
 
 var (
-	out    = flag.String("o", "output", "output file path")
-	prefix = flag.String("p", "tp-", "css class name prefix")
-	t      = template.Must(template.New("css").Parse(`/* ----------------------------------------------------
+	out     = flag.String("o", "output", "output file path")
+	outtype = flag.String("t", "png", "output file type. png webp jpg")
+	prefix  = flag.String("p", "tp-", "css class name prefix")
+	t       = template.Must(template.New("css").Parse(`/* ----------------------------------------------------
    created with https://github.com/nzlov/tp
    ----------------------------------------------------
 
@@ -27,7 +32,7 @@ var (
    ----------------------------------------------------
 */
 
-.sprite {display:inline-block; overflow:hidden; background-repeat: no-repeat;background-image:url({{.Name}}.png);}
+.sprite {display:inline-block; overflow:hidden; background-repeat: no-repeat;background-image:url(./{{.Name}}.{{.OutType}});}
 {{$prefix := .Prefix}}
 {{range .Sprites}}
 .{{$prefix}}{{.Name}} {width:{{.W}}px; height:{{.H}}px; background-position: -{{.X}}px -{{.Y}}px}
@@ -63,17 +68,29 @@ func save(name string, is []*Item) error {
 	defer cf.Close()
 	if err := t.Execute(cf, map[string]any{
 		"Prefix":  prefix,
+		"OutType": outtype,
 		"Name":    name,
 		"Sprites": is,
 	}); err != nil {
 		return err
 	}
-	f, err := os.Create(name + ".png")
+	f, err := os.Create(name + "." + *outtype)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return png.Encode(f, img)
+	switch *outtype {
+	case "jpg":
+		return jpeg.Encode(f, img, &jpeg.Options{Quality: 100})
+	case "webp":
+		options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 100)
+		if err != nil {
+			return err
+		}
+		return webp.Encode(f, img, options)
+	default:
+		return png.Encode(f, img)
+	}
 }
 
 func flow(is []*Item) (image.Image, error) {
